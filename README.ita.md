@@ -28,14 +28,24 @@ Quando esce una nuova versione di OmniVix, l'immagine `:latest` su ghcr.io viene
 - Restart manuale dello Space, oppure
 - Pin a una versione specifica nel `Dockerfile` (es. `:v1.2.0` o `:sha-abc1234`).
 
-## Self-hosting su VPS (con WARP)
+## Self-hosting su VPS
 
-Se preferisci girare OmniVix sul tuo server invece che su Hugging Face, vedi [`docker-compose-vps.yml`](docker-compose-vps.yml). Avvia due container — `omnivix` e Cloudflare WARP — in modo che tutto il traffico outbound passi dagli IP egress WARP (evita i ban ASN Cloudflare 1005 su Oracle / Hetzner / OVH / ecc.).
+Sono forniti due file compose. Entrambi instradano il traffico outbound attraverso WARP per bypassare i ban ASN Cloudflare 1005 sugli IP cloud (Oracle / Hetzner / OVH / …).
+
+| File | Container | Capabilities | Quando usarlo |
+|---|---|---|---|
+| [`docker-compose-vps-aio.yml`](docker-compose-vps-aio.yml) | 1 (`omnivix:warp`) | nessuna | setup minimale, host con restrizioni, semplicità a singolo processo |
+| [`docker-compose-vps.yml`](docker-compose-vps.yml) | 2 (`omnivix:latest` + sidecar `caomingjun/warp`) | `NET_ADMIN`, `/dev/net/tun` sul container warp | feature WARP complete (supporto UDP, `warp-cli` ufficiale); più robusto al restart di WARP |
 
 ```bash
+# All-in-one (un container, nessun privilegio)
+docker compose -f docker-compose-vps-aio.yml up -d
+
+# Sidecar (due container, WARP ufficiale)
 docker compose -f docker-compose-vps.yml up -d
-# → http://<tuo-host>:7000/manifest.json
 ```
+
+Aggiungi a Stremio: `http://<tuo-host>:7000/manifest.json`.
 
 ---
 

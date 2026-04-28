@@ -1,0 +1,32 @@
+# All-in-one self-host: a single container running OmniVix with Cloudflare
+# WARP bundled inside (via wgcf + wireproxy as userspace WireGuard).
+#
+# vs docker-compose-vps.yml: only one container, no NET_ADMIN, no /dev/net/tun.
+# Trade-off: wireproxy is TCP-only over WG (fine for HLS/HTTPS); the
+# `:warp` image registers a fresh WARP identity on every restart unless you
+# mount a volume for /tmp/warp (commented below).
+#
+# Usage:
+#   docker compose -f docker-compose-vps-aio.yml up -d
+# Then add to Stremio:  http://<your-host>:7000/manifest.json
+
+services:
+  omnivix:
+    image: ghcr.io/enrico9034/omnivix:warp
+    container_name: omnivix
+    restart: unless-stopped
+    environment:
+      - PORT=7000
+      # WARP_PROXY is preset to socks5h://127.0.0.1:1080 inside the image.
+      # - AU_LANG=both        # ita | sub | both (default: both)
+    ports:
+      - "7000:7000"
+    # Optional: persist the WARP identity across restarts. The volume must
+    # be writable by UID 1000 (the image's runtime user); chown it on the
+    # host or use the named volume below (Docker creates it as root, then
+    # the entrypoint chmods on first run if you uncomment `user: root`).
+    # volumes:
+    #   - omnivix-warp-data:/tmp/warp
+
+# volumes:
+#   omnivix-warp-data:
