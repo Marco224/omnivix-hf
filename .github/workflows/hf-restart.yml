@@ -1,0 +1,52 @@
+name: Hugging Face Space Factory Rebuild
+
+on:
+  schedule:
+  # Esegue la ricompilazione ogni giorno alle 02:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Permette di avviare il processo anche manualmente
+
+jobs:
+  rebuild-space:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Installa HuggingFace Hub
+        run: |
+          pip install huggingface_hub
+
+      - name: Ricompila (Factory Reboot) lo Spazio con Retry
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        shell: python
+        run: |
+          from huggingface_hub import HfApi
+          import os
+          import sys
+          import time
+          
+          # Parametri dello spazio
+          repo_id = 'Marco224/Omnia'
+          token = os.environ.get('HF_TOKEN')
+          
+          if not token:
+              print('ERRORE: Token HF_TOKEN non trovato nei Secret di GitHub!')
+              sys.exit(1)
+              
+          api = HfApi(token=token)
+          max_tentativi = 3
+          
+          for tentativo in range(max_tentativi):
+              try:
+                  print(f"Tentativo {tentativo + 1} di {max_tentativi}...")
+                  api.restart_space(repo_id=repo_id, factory_reboot=True)
+                  print(f'Successo: Segnale di Factory Reboot inviato a {repo_id}')
+                  sys.exit(0) # Esce con successo
+                  
+              except Exception as e:
+                  print(f"Errore: {e}")
+                  if tentativo < max_tentativi - 1:
+                      print("Il server di Hugging Face ha avuto un problema. Attendo 5 minuti prima di riprovare...")
+                      time.sleep(300) # Aspetta 300 secondi (5 minuti)
+                  else:
+                      print("Tutti i tentativi sono falliti. Il server di Hugging Face è irraggiungibile.")
+                      sys.exit(1)
