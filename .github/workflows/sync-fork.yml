@@ -1,0 +1,20 @@
+name: Sincronizzazione Automatica Fork
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Esegue l'azione ogni giorno a mezzanotte (UTC)
+  workflow_dispatch: # Ti permette di far partire lo script anche manualmente dal pannello Actions
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Permesso necessario per aggiornare il tuo repository
+
+    steps:
+      - name: Sincronizza il fork con l'upstream
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_SYNC }}
+        run: |
+          # NOTA: Cambia 'main' in 'master' se il branch predefinito si chiama master
+          gh repo sync ${{ github.repository }} -b main
